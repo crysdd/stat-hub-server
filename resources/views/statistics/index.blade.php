@@ -4,7 +4,6 @@
 <style>
     .chart-container {
         position: relative;
-        height: 700px;
         width: 100%;
     }
 </style>
@@ -19,7 +18,7 @@
                     <div class="card mb-4">
                         <div class="card-header">{{ __('User Statistics Chart') }}</div>
                         <div class="chart-container">
-                            <canvas id="statsChart"></canvas>
+                            <canvas id="statsChart" height="400"></canvas>
                         </div>
                     </div>
 
