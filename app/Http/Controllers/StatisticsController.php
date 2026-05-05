@@ -5,9 +5,10 @@ use App\Services\StatisticService;
 
 class StatisticsController extends Controller
 {
+    public function index(StatisticService $statisticService)
+    {
+        $dailyStats = $statisticService->getDailyStats();
 
-    // public function getStats(StatisticService $statisticService)
-    // {
-    //     return response()->json($statisticService->getStats());
-    // }
+        return view('statistics.index', compact('dailyStats'));
+    }
 }

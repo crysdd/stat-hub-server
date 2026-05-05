@@ -13,7 +13,7 @@ class HitController extends Controller
     {
         $service->store($request);
 
-        $response = response()->make("", 200);
+        $response = response()->make();
         $response->header('Content-Type', 'image/png');
 
         return $response;

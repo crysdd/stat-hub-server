@@ -4,6 +4,7 @@ use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\HitController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\ImgController;
+use App\Http\Controllers\StatisticsController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/login', [LoginController::class, 'showLoginForm']);
@@ -12,13 +13,7 @@ Route::post('/logout', [LoginController::class, 'logout'])->name('logout');
 
 Route::get('/', [HomeController::class, 'index'])->name('home');
 
-// Statistics API routes
-Route::get('/test', ImgController::class);
-Route::get('/hit', HitController::class);
-// Route::get('/api/statistics', [StatisticsController::class, 'getStats']);
+Route::get('/img', ImgController::class);
+Route::any('/hit', HitController::class);
 
-// Statistics page
-// Route::get('/statistics', function () {
-//     return view('statistics');
-// })->name('statistics');
-
+Route::get('/statistics', [StatisticsController::class, 'index'])->name('statistics.index');
