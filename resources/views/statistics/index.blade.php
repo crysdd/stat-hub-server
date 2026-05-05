@@ -62,6 +62,11 @@
                                     </tr>
                                 </thead>
                                 <tbody>
+                                    <tr>
+                                            <td><strong>Total Days:</strong> {{ $dailyStats->count() }}</td>
+                                            <td><strong>Total Users:</strong> {{ $dailyStats->sum('count') }}</td>
+                                            <td><strong>Total Hits:</strong> {{ $dailyStats->sum('count_hit') }}</td>
+                                        </tr>
                                     @foreach ($dailyStats->reverse() as $stat)
                                         <tr>
                                             <td>{{ Illuminate\Support\Carbon::parse($stat->date)->format('Y-m-d') }}</td>
@@ -69,13 +74,13 @@
                                             <td>{{ $stat->count_hit }}</td>
                                         </tr>
                                     @endforeach
+                                        <tr>
+                                            <td><strong>Total Days:</strong> {{ $dailyStats->count() }}</td>
+                                            <td><strong>Total Users:</strong> {{ $dailyStats->sum('count') }}</td>
+                                            <td><strong>Total Hits:</strong> {{ $dailyStats->sum('count_hit') }}</td>
+                                        </tr>
                                 </tbody>
                             </table>
-
-                            <div class="mt-3">
-                                <strong>Total Days:</strong> {{ $dailyStats->count() }}<br>
-                                <strong>Total Users:</strong> {{ $dailyStats->sum('count') }}
-                            </div>
                         @endif
                     </div>
                 </div>
