@@ -4,6 +4,7 @@ namespace App\Services;
 use App\Data\HitData;
 use App\Models\Statistic;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
 use UAParser\Parser;
 
 class StatisticService
@@ -56,21 +57,52 @@ class StatisticService
         Statistic::create($hitData->toArray());
     }
 
-    public function getDailyStats()
+    public function getDailyStatsForMonth(Carbon $month)
     {
-        return Statistic::selectRaw('DATE(created_at) as date, COUNT(DISTINCT client_ip) as count')
+        // Get start and end of the specified month
+        $startOfMonth = $month->copy()->startOfMonth();
+        $endOfMonth = $month->copy()->endOfMonth();
+
+        // Get statistics for the month, grouped by date
+        $statsData = Statistic::selectRaw("
+            DATE(created_at) as date,
+            COUNT(*) as count_hit,
+            COUNT(DISTINCT CONCAT_WS('||', browser_name, browser_version, os_name, screen_resolution, color_depth, language, client_ip)) as count
+        ")
+            ->where('created_at', '>=', $startOfMonth)
+            ->where('created_at', '<=', $endOfMonth)
             ->groupBy('date')
-            ->orderBy('date', 'desc')
-            ->get();
+            ->orderBy('date', 'asc')
+            ->get()
+            ->keyBy('date');
+
+        // Create a date range for all days in the month
+        $currentDate = $startOfMonth->copy();
+        $endDate = $endOfMonth->copy();
+        $dateRange = collect();
+
+        while ($currentDate <= $endDate) {
+            $dateString = $currentDate->format('Y-m-d');
+            $dateRange->put($dateString, (object) [
+                'date' => $dateString,
+                'count' => $statsData[$dateString]->count ?? 0,
+                'count_hit' => $statsData[$dateString]->count_hit ?? 0,
+            ]);
+
+            $currentDate->addDay();
+        }
+
+        return collect($dateRange->values()->all());
     }
 
-    // public function getDailyHitStats()
-    // {
-    //     return Statistic::selectRaw('DATE(created_at) as date, COUNT(*) as count')
-    //         ->groupBy('date')
-    //         ->orderBy('date', 'desc')
-    //         ->get();
-    // }
+    public function getEarliestMonth(): Carbon
+    {
+        $earliestRecord = Statistic::min('created_at');
+
+        return $earliestRecord
+            ? Carbon::parse($earliestRecord)->startOfMonth()
+            : Carbon::now()->startOfMonth();
+    }
 
     // Count unique users by browser
     public function getCountByBrowser()
@@ -89,5 +121,5 @@ class StatisticService
             ->orderBy('count', 'desc')
             ->get();
     }
-
 }
+
