@@ -15,6 +15,7 @@ class StatisticService
         $parser      = Parser::create();
         $userAgent   = data_get($requestData, 'header.user-agent.0') ?? data_get($requestData, 'header.user-agent');
         $language    = data_get($requestData, 'header.accept-language.0') ?? data_get($requestData, 'header.accept-language');
+        $host        = data_get($requestData, 'header.host.0') ?? data_get($requestData, 'header.host');
 
         // Parse user agent on server side
         $result = $parser->parse($userAgent);
@@ -48,6 +49,7 @@ class StatisticService
             'screen_resolution' => $screenWidth && $screenHeight ? $screenWidth . 'x' . $screenHeight : null,
             'color_depth'       => $colorDepth > 0 ? $colorDepth : 24,
             'language'          => $language,
+            'host'              => $host,
             'page_url'          => $browserUrl ?: null,
             'client_ip'         => data_get($requestData, 'client_ip'),
             'referrer'          => $referrer,
@@ -61,7 +63,7 @@ class StatisticService
     {
         // Get start and end of the specified month
         $startOfMonth = $month->copy()->startOfMonth();
-        $endOfMonth = $month->copy()->endOfMonth();
+        $endOfMonth   = $month->copy()->endOfMonth();
 
         // Get statistics for the month, grouped by date
         $statsData = Statistic::selectRaw("
@@ -78,14 +80,14 @@ class StatisticService
 
         // Create a date range for all days in the month
         $currentDate = $startOfMonth->copy();
-        $endDate = $endOfMonth->copy();
-        $dateRange = collect();
+        $endDate     = $endOfMonth->copy();
+        $dateRange   = collect();
 
         while ($currentDate <= $endDate) {
             $dateString = $currentDate->format('Y-m-d');
             $dateRange->put($dateString, (object) [
-                'date' => $dateString,
-                'count' => $statsData[$dateString]->count ?? 0,
+                'date'      => $dateString,
+                'count'     => $statsData[$dateString]->count ?? 0,
                 'count_hit' => $statsData[$dateString]->count_hit ?? 0,
             ]);
 
@@ -122,4 +124,3 @@ class StatisticService
             ->get();
     }
 }
-

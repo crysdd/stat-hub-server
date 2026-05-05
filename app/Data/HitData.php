@@ -17,6 +17,7 @@ class HitData extends Data
         public string $screenResolution,
         public string $colorDepth,
         public string $language,
+        public string $host,
         public string $pageUrl,
         public string $clientIp,
         public string $referrer,

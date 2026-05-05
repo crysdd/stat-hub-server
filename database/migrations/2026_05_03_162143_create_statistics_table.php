@@ -14,14 +14,15 @@ return new class extends Migration
         Schema::create('statistics', function (Blueprint $table) {
             $table->id();
             $table->text('user_agent');
-            $table->string('browser_name')->nullable();
-            $table->string('browser_version')->nullable();
-            $table->string('os_name')->nullable();
-            $table->string('screen_resolution')->nullable();
+            $table->string('browser_name')->default('');
+            $table->string('browser_version')->default('');
+            $table->string('os_name')->default('');
+            $table->string('screen_resolution')->default('');
             $table->integer('color_depth')->default(24);
-            $table->string('language')->nullable();
-            $table->text('page_url')->nullable();
-            $table->string('client_ip')->nullable();
+            $table->string('language')->default('');
+            $table->text('host')->default('');
+            $table->text('page_url')->default('');
+            $table->string('client_ip')->default('');
             $table->text('referrer')->default('');
             $table->timestamps();
         });

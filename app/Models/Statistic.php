@@ -14,6 +14,7 @@ class Statistic extends Model
         'screen_resolution',
         'color_depth',
         'language',
+        'host',
         'page_url',
         'client_ip',
         'referrer',
