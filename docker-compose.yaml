@@ -1,0 +1,61 @@
+name: stat-hub-server
+services:
+  web:
+    container_name: stat-hub-server-nginx
+    image: "nginx:stable-alpine"
+    restart: unless-stopped
+    ports:
+      - "8000:80"
+    volumes:
+      - ./.docker/services/web/nginx.conf:/etc/nginx/conf.d/default.conf
+      - .:/app
+    depends_on:
+      - php
+    networks:
+      - main
+  php:
+    container_name: stat-hub-server-php-fpm
+    restart: unless-stopped
+    depends_on:
+      - db
+    build:
+      context: .docker/services/php
+      args:
+        USER_UID: "${USER_UID:-1000}"
+        USER_GID: "${USER_GID:-1000}"
+        CONTAINER_USER: "www"
+        ENTRYPOINT: "docker-fpm-entrypoint"
+    volumes:
+      - .:/app
+    environment:
+      - XDEBUG_MODE
+    networks:
+      - main
+
+  db:
+    container_name: stat-hub-server-postgres
+    image: postgres:latest
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-app}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-secret}
+      POSTGRES_DB: ${POSTGRES_DB:-app_db}
+    volumes:
+      - ./.docker/volumes/db:/var/lib/postgresql
+    ports:
+      - "${DOCKER_DB_PORT:-54321}:5432"
+    networks:
+      - main
+
+  redis:
+    container_name: stat-hub-server-redis
+    image: redis:alpine
+    ports:
+      - "${DOCKER_REDIS_PORT:-63791}:6379"
+      - "${DOCKER_REDIS_SSL_PORT:-63801}:6380"
+    networks:
+      - main
+
+networks:
+  main:
+    name: stat-hub-server
+    external: true

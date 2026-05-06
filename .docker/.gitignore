@@ -1,0 +1,5 @@
+!.gitignore
+volumes/db/*
+volumes/clickhouse/*
+volumes/mongodb/*
+!volumes/*/.gitkeep
