@@ -59,7 +59,7 @@ class StatisticService
         Statistic::create($hitData->toArray());
     }
 
-    public function getDailyStatsForMonth(Carbon $month)
+    public function getDailyStatsForMonth(Carbon $month, ?string $host = null)
     {
         // Get start and end of the specified month
         $startOfMonth = $month->copy()->startOfMonth();
@@ -73,6 +73,9 @@ class StatisticService
         ")
             ->where('created_at', '>=', $startOfMonth)
             ->where('created_at', '<=', $endOfMonth)
+            ->when($host, function ($query) use ($host) {
+                $query->where('host', $host);
+            })
             ->groupBy('date')
             ->orderBy('date', 'asc')
             ->get()
@@ -123,4 +126,20 @@ class StatisticService
             ->orderBy('count', 'desc')
             ->get();
     }
+
+    // Count unique users by host for a specific month
+    public function getCountByHostForMonth(Carbon $month)
+    {
+        $startOfMonth = $month->copy()->startOfMonth();
+        $endOfMonth   = $month->copy()->endOfMonth();
+
+        return Statistic::query()
+            ->selectRaw('host, COUNT(*) as count')
+            ->where('created_at', '>=', $startOfMonth)
+            ->where('created_at', '<=', $endOfMonth)
+            ->groupBy('host')
+            ->orderByDesc('count')
+            ->get();
+    }
 }
+

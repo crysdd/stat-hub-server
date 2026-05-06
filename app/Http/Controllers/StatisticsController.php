@@ -9,6 +9,7 @@ class StatisticsController extends Controller
     public function index(StatisticService $statisticService)
     {
         $month = request('month');
+        $host = request('host');
         // Determine the month to fetch statistics for
         if ($month) {
             // Validate the month parameter (format: YYYY-MM)
@@ -16,7 +17,7 @@ class StatisticsController extends Controller
                 $currentDate = Carbon::parse($month . '-01');
 
                 // Prevent future months beyond current date
-                if ($currentDate->isFuture()) {
+                if ($currentDate->isFuture() || $currentDate->isCurrentMonth() && !$host) {
                     return redirect()->route('statistics.index');
                 }
             } catch (\Exception $e) {
@@ -39,23 +40,29 @@ class StatisticsController extends Controller
             // If the previous month has no records, we can't navigate further back
             $previousMonth = null;
         } else {
-            $previousMonth = $currentDate->copy()->subMonth()->format('Y-m');
+            $previousMonth = $currentDate->copy()->subMonth()->format('Y-m-d');
         }
 
         // Get next month (only if not current month)
         $nextMonth = $currentDate->isCurrentMonth()
             ? null
-            : $currentDate->copy()->addMonth()->format('Y-m');
+            : $currentDate->copy()->addMonth()->format('Y-m-d');
 
         // Get current month's statistics
         $dailyStats = $statisticService->getDailyStatsForMonth($currentDate);
+        $hosts = $statisticService->getCountByHostForMonth($currentDate);
+
+        // Get current month's statistics
+        $dailyStats = $statisticService->getDailyStatsForMonth($currentDate, $host);
+        $hosts = $statisticService->getCountByHostForMonth($currentDate);
 
         // Add pagination info to the collection for view
         $dailyStats->previous_month = $previousMonth;
         $dailyStats->next_month = $nextMonth;
         $dailyStats->current_month = $currentDate->format('Y-m-d');
+        $dailyStats->host = $host;
 
-        return view('statistics.index', compact('dailyStats'));
+        return view('statistics.index', compact('dailyStats', 'hosts'));
     }
 }
 

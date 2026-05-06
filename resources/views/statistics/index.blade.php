@@ -1,18 +1,40 @@
 @extends('layouts.app')
 
 @push('styles')
-<style>
-    .chart-container {
-        position: relative;
-        width: 100%;
-    }
-</style>
+    <style>
+        .chart-container {
+            position: relative;
+            width: 100%;
+        }
+    </style>
 @endpush
 
 @section('content')
     <div class="container">
         <div class="row justify-content-center">
-            <div class="col-md-12">
+
+            <div class="col-md-3 d-none d-md-block">
+                <div class="sidebar">
+                    <h5>Hosts</h5>
+                    <div>
+                        <a href="{{ route('statistics.index', ['month' => $dailyStats->current_month]) }}">
+                            All
+                        </a>
+                        ({{ $hosts->sum('count') }})
+                    </div>
+                    @foreach ($hosts as $host)
+                        <div>
+                            <a
+                                href="{{ route('statistics.index', ['month' => $dailyStats->current_month, 'host' => $host->host]) }}">
+                                {{ $host->host }}
+                            </a>
+                            ({{ $host->count }})
+                        </div>
+                    @endforeach
+                </div>
+            </div>
+
+            <div class="col-md-9">
                 @if (!$dailyStats->isEmpty())
                     <!-- Chart Section -->
                     <div class="card mb-4">
@@ -25,20 +47,29 @@
                     <!-- Month Navigation -->
                     <div class="d-flex justify-content-between align-items-center mb-3">
                         @if ($dailyStats->previous_month)
-                            <a href="{{ route('statistics.index', ['month' => $dailyStats->previous_month]) }}"
-                               class="btn btn-outline-primary">
-                                &larr; {{ Illuminate\Support\Carbon::parse($dailyStats->previous_month . '-01')->format('F Y') }}
+                            <a href="{{ route('statistics.index', ['month' => $dailyStats->previous_month, 'host' => $dailyStats->host]) }}"
+                                class="btn btn-outline-primary">
+                                &larr; {{ Illuminate\Support\Carbon::parse($dailyStats->previous_month)->format('F Y') }}
                             </a>
                         @else
                             <span></span> <!-- Spacer -->
                         @endif
 
-                        <h4>{{ Illuminate\Support\Carbon::parse($dailyStats->current_month)->format('F Y') }}</h4>
+                        <h4>
+                            @if (Illuminate\Support\Carbon::parse($dailyStats->current_month)->isCurrentMonth())
+                                {{ __('Now') }}
+                            @else
+                                {{ Illuminate\Support\Carbon::parse($dailyStats->current_month)->format('F Y') }}
+                            @endif
+                            @if ($dailyStats->host)
+                                ({{ $dailyStats->host }})
+                            @endif
+                        </h4>
 
-                        @if ($dailyStats->next_month && $dailyStats->next_month <= Illuminate\Support\Carbon::now()->format('Y-m'))
-                            <a href="{{ route('statistics.index', ['month' => $dailyStats->next_month]) }}"
-                               class="btn btn-outline-primary">
-                                {{ Illuminate\Support\Carbon::parse($dailyStats->next_month . '-01')->format('F Y') }} &rarr;
+                        @if ($dailyStats->next_month && $dailyStats->next_month <= Illuminate\Support\Carbon::now()->format('Y-m-d'))
+                            <a href="{{ route('statistics.index', ['month' => $dailyStats->next_month, 'host' => $dailyStats->host]) }}"
+                                class="btn btn-outline-primary">
+                                {{ Illuminate\Support\Carbon::parse($dailyStats->next_month)->format('F Y') }} &rarr;
                             </a>
                         @else
                             <span></span> <!-- Spacer -->
@@ -63,10 +94,10 @@
                                 </thead>
                                 <tbody>
                                     <tr>
-                                            <td><strong>Total Days:</strong> {{ $dailyStats->count() }}</td>
-                                            <td><strong>Total Users:</strong> {{ $dailyStats->sum('count') }}</td>
-                                            <td><strong>Total Hits:</strong> {{ $dailyStats->sum('count_hit') }}</td>
-                                        </tr>
+                                        <td><strong>Total Days:</strong> {{ $dailyStats->count() }}</td>
+                                        <td><strong>Total Users:</strong> {{ $dailyStats->sum('count') }}</td>
+                                        <td><strong>Total Hits:</strong> {{ $dailyStats->sum('count_hit') }}</td>
+                                    </tr>
                                     @foreach ($dailyStats->reverse() as $stat)
                                         <tr>
                                             <td>{{ Illuminate\Support\Carbon::parse($stat->date)->format('Y-m-d') }}</td>
@@ -74,11 +105,11 @@
                                             <td>{{ $stat->count_hit }}</td>
                                         </tr>
                                     @endforeach
-                                        <tr>
-                                            <td><strong>Total Days:</strong> {{ $dailyStats->count() }}</td>
-                                            <td><strong>Total Users:</strong> {{ $dailyStats->sum('count') }}</td>
-                                            <td><strong>Total Hits:</strong> {{ $dailyStats->sum('count_hit') }}</td>
-                                        </tr>
+                                    <tr>
+                                        <td><strong>Total Days:</strong> {{ $dailyStats->count() }}</td>
+                                        <td><strong>Total Users:</strong> {{ $dailyStats->sum('count') }}</td>
+                                        <td><strong>Total Hits:</strong> {{ $dailyStats->sum('count_hit') }}</td>
+                                    </tr>
                                 </tbody>
                             </table>
                         @endif
@@ -88,70 +119,68 @@
         </div>
     </div>
 
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    const ctx = document.getElementById('statsChart').getContext('2d');
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const ctx = document.getElementById('statsChart').getContext('2d');
 
-    // Extract data from the stats
-    const dates = @json($dailyStats->pluck('date')->map(fn($date) => Illuminate\Support\Carbon::parse($date)->format('Y-m-d')));
-    const userCounts = @json($dailyStats->pluck('count'));
-    const hitCounts = @json($dailyStats->pluck('count_hit'));
+            // Extract data from the stats
+            const dates = @json($dailyStats->pluck('date')->map(fn($date) => Illuminate\Support\Carbon::parse($date)->format('Y-m-d')));
+            const userCounts = @json($dailyStats->pluck('count'));
+            const hitCounts = @json($dailyStats->pluck('count_hit'));
 
-    // Create chart
-    new Chart(ctx, {
-        type: 'line',
-        data: {
-            labels: dates,
-            datasets: [
-                {
-                    label: 'Users',
-                    data: userCounts,
-                    borderColor: '#36a2eb', // Blue color for users
-                    backgroundColor: 'rgba(54, 162, 235, 0.2)',
-                    tension: 0.3,
-                    fill: false
+            // Create chart
+            new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: dates,
+                    datasets: [{
+                            label: 'Users',
+                            data: userCounts,
+                            borderColor: '#36a2eb', // Blue color for users
+                            backgroundColor: 'rgba(54, 162, 235, 0.2)',
+                            tension: 0.3,
+                            fill: false
+                        },
+                        {
+                            label: 'Hits',
+                            data: hitCounts,
+                            borderColor: '#ffcd56', // Yellow/orange color for hits
+                            backgroundColor: 'rgba(255, 205, 86, 0.2)',
+                            tension: 0.3,
+                            fill: false
+                        }
+                    ]
                 },
-                {
-                    label: 'Hits',
-                    data: hitCounts,
-                    borderColor: '#ffcd56', // Yellow/orange color for hits
-                    backgroundColor: 'rgba(255, 205, 86, 0.2)',
-                    tension: 0.3,
-                    fill: false
-                }
-            ]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            scales: {
-                x: {
-                    title: {
-                        display: true,
-                        text: 'Date'
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        x: {
+                            title: {
+                                display: true,
+                                text: 'Date'
+                            }
+                        },
+                        y: {
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: 'Count'
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            position: 'top'
+                        },
+                        tooltip: {
+                            mode: 'index',
+                            intersect: false
+                        }
                     }
-                },
-                y: {
-                    beginAtZero: true,
-                    title: {
-                        display: true,
-                        text: 'Count'
-                    }
                 }
-            },
-            plugins: {
-                legend: {
-                    position: 'top'
-                },
-                tooltip: {
-                    mode: 'index',
-                    intersect: false
-                }
-            }
-        }
-    });
-});
-</script>
+            });
+        });
+    </script>
 @endsection
-
