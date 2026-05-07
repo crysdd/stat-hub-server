@@ -1,7 +1,7 @@
 <?php
 namespace App\Services;
 
-use App\Data\HitData;
+use App\Jobs\HitJob;
 use App\Models\Statistic;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
@@ -12,51 +12,8 @@ class StatisticService
     public function store(Request $request)
     {
         $requestData = $request->all();
-        $parser      = Parser::create();
-        $userAgent   = data_get($requestData, 'header.user-agent.0') ?? data_get($requestData, 'header.user-agent');
-        $language    = data_get($requestData, 'header.accept-language.0') ?? data_get($requestData, 'header.accept-language');
-        $host        = data_get($requestData, 'header.host.0') ?? data_get($requestData, 'header.host');
 
-        // Parse user agent on server side
-        $result = $parser->parse($userAgent);
-
-        // Extract and decode query parameters
-        $referrer         = urldecode(data_get($requestData, 'data.r'));
-        $screenResolution = data_get($requestData, 'data.s');
-        $browserUrl       = urldecode(data_get($requestData, 'data.u'));
-
-        // Parse screen resolution from format like "1920*1080*24"
-        $screenWidth  = null;
-        $screenHeight = null;
-        $colorDepth   = 24; // Default fallback
-
-        if ($screenResolution) {
-            $parts = explode('*', $screenResolution);
-            if (count($parts) >= 2) {
-                $screenWidth  = isset($parts[0]) ? intval($parts[0]) : null;
-                $screenHeight = isset($parts[1]) ? intval($parts[1]) : null;
-                if (count($parts) >= 3) {
-                    $colorDepth = intval($parts[2]);
-                }
-            }
-        }
-
-        $hitData = HitData::from([
-            'user_agent'        => $userAgent,
-            'browser_name'      => $result->ua->family ?? 'Unknown',
-            'browser_version'   => ($result->ua->major ?? '') . '.' . ($result->ua->minor ?? ''),
-            'os_name'           => $result->os->family ?? 'Unknown',
-            'screen_resolution' => $screenWidth && $screenHeight ? $screenWidth . 'x' . $screenHeight : null,
-            'color_depth'       => $colorDepth > 0 ? $colorDepth : 24,
-            'language'          => $language,
-            'host'              => $host,
-            'page_url'          => $browserUrl ?: null,
-            'client_ip'         => data_get($requestData, 'client_ip'),
-            'referrer'          => $referrer,
-        ]);
-
-        // Store the statistics
-        Statistic::create($hitData->toArray());
+        HitJob::dispatch($requestData);
     }
 
     public function getDailyStatsForMonth(Carbon $month, ?string $host = null)
